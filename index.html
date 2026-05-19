@@ -34,77 +34,83 @@ const COURIERS = [
 ];
 
 const POSTCODES = [
-  { id: 1010, code: '1010', suburb: 'Auckland CBD',  region: 'Central' },
-  { id: 1011, code: '1011', suburb: 'Grafton',       region: 'Central' },
-  { id: 1021, code: '1021', suburb: 'Newmarket',     region: 'Central' },
-  { id: 1023, code: '1023', suburb: 'Mt Eden',       region: 'Central' },
-  { id: 1024, code: '1024', suburb: 'Epsom',         region: 'Central' },
-  { id: 1041, code: '1041', suburb: 'Newton',        region: 'Central' },
-  { id: 1050, code: '1050', suburb: 'Remuera',       region: 'East' },
-  { id: 1052, code: '1052', suburb: 'Greenlane',     region: 'East' },
-  { id: 1071, code: '1071', suburb: 'Mission Bay',   region: 'East' },
-  { id: 1072, code: '1072', suburb: 'Glen Innes',    region: 'East' },
-  { id: 0626, code: '0626', suburb: 'Glenfield',     region: 'North Shore' },
-  { id: 0627, code: '0627', suburb: 'Birkenhead',    region: 'North Shore' },
-  { id: 0630, code: '0630', suburb: 'Takapuna',      region: 'North Shore' },
-  { id: 0632, code: '0632', suburb: 'Rosedale',      region: 'North Shore' },
-  { id: 0931, code: '0931', suburb: 'Hobsonville',   region: 'West' },
-  { id: 0612, code: '0612', suburb: 'Albany',        region: 'North Shore' },
-  { id: 2010, code: '2010', suburb: 'Manukau',       region: 'South' },
-  { id: 2014, code: '2014', suburb: 'Otahuhu',       region: 'South' },
-  { id: 2016, code: '2016', suburb: 'Mangere',       region: 'South' },
-  { id: 2022, code: '2022', suburb: 'Papatoetoe',    region: 'South' },
-  { id: 2104, code: '2104', suburb: 'Onehunga',      region: 'South' },
+  // Downtown
+  { id: 90012, code: '90012', suburb: 'Downtown LA',         region: 'Downtown' },
+  { id: 90013, code: '90013', suburb: 'Arts District',       region: 'Downtown' },
+  { id: 90014, code: '90014', suburb: 'Fashion District',    region: 'Downtown' },
+  { id: 90017, code: '90017', suburb: 'Westlake',            region: 'Downtown' },
+  // Hollywood / Mid-City
+  { id: 90028, code: '90028', suburb: 'Hollywood',           region: 'Hollywood / Mid-City' },
+  { id: 90035, code: '90035', suburb: 'Pico-Robertson',      region: 'Hollywood / Mid-City' },
+  { id: 90036, code: '90036', suburb: 'Mid-Wilshire',        region: 'Hollywood / Mid-City' },
+  { id: 90048, code: '90048', suburb: 'Beverly Grove',       region: 'Hollywood / Mid-City' },
+  { id: 90069, code: '90069', suburb: 'West Hollywood',      region: 'Hollywood / Mid-City' },
+  // Westside
+  { id: 90024, code: '90024', suburb: 'Westwood',            region: 'Westside' },
+  { id: 90064, code: '90064', suburb: 'West LA',             region: 'Westside' },
+  { id: 90089, code: '90089', suburb: 'USC',                 region: 'Westside' },
+  { id: 90095, code: '90095', suburb: 'UCLA',                region: 'Westside' },
+  { id: 90230, code: '90230', suburb: 'Culver City',         region: 'Westside' },
+  { id: 90291, code: '90291', suburb: 'Venice',              region: 'Westside' },
+  // Beverly Hills
+  { id: 90210, code: '90210', suburb: 'Beverly Hills',       region: 'Beverly Hills' },
+  { id: 90211, code: '90211', suburb: 'Beverly Hills South', region: 'Beverly Hills' },
+  { id: 90212, code: '90212', suburb: 'Cheviot Hills',       region: 'Beverly Hills' },
+  // South Bay / Coastal
+  { id: 90245, code: '90245', suburb: 'El Segundo',          region: 'South Bay / Coastal' },
+  { id: 90401, code: '90401', suburb: 'Santa Monica',        region: 'South Bay / Coastal' },
+  { id: 90402, code: '90402', suburb: 'Santa Monica North',  region: 'South Bay / Coastal' },
+  { id: 90404, code: '90404', suburb: 'Santa Monica East',   region: 'South Bay / Coastal' },
 ];
 
 // Seed routes
 const INITIAL_ROUTES = [
   {
-    id: 1, name: 'Mt Eden / Epsom AM Medical',
-    area: 'Central',
+    id: 1, name: 'Westside Medical AM',
+    area: 'Westside',
     defaultCourierId: 1,
-    zipcodeIds: [1023, 1024, 1021, 1041],
+    zipcodeIds: [90024, 90064, 90089, 90095, 90230],
     active: true,
   },
   {
-    id: 2, name: 'CBD Pharma Run',
-    area: 'Central',
+    id: 2, name: 'Downtown Hospital Loop',
+    area: 'Downtown',
     defaultCourierId: 3,
-    zipcodeIds: [1010, 1011, 1041, 1021],
+    zipcodeIds: [90012, 90013, 90014, 90017],
     active: true,
   },
   {
-    id: 3, name: 'North Shore Hospital Loop',
-    area: 'North Shore',
+    id: 3, name: 'Beverly Hills Specialist Run',
+    area: 'Beverly Hills',
     defaultCourierId: 2,
-    zipcodeIds: [0630, 0627, 0626, 0632, 0612],
+    zipcodeIds: [90210, 90211, 90212, 90035, 90048],
     active: true,
   },
   {
-    id: 4, name: 'Manukau / South Medical PM',
-    area: 'South',
+    id: 4, name: 'Santa Monica Pharma PM',
+    area: 'South Bay / Coastal',
     defaultCourierId: 4,
-    zipcodeIds: [2010, 2014, 2016, 2022, 2104],
+    zipcodeIds: [90401, 90402, 90404, 90291, 90245],
     active: true,
   },
   {
-    id: 5, name: 'East Auckland Specialist',
-    area: 'East',
+    id: 5, name: 'Hollywood / Mid-City Med',
+    area: 'Hollywood / Mid-City',
     defaultCourierId: 5,
-    zipcodeIds: [1050, 1052, 1071, 1072],
+    zipcodeIds: [90028, 90036, 90048, 90069],
     active: false,
   },
 ];
 
 // Seed roster: weekly pattern for routes 1-4
 const INITIAL_ROSTER = [
-  // Route 1 — Mt Eden, Sarah Mon-Wed, Priya Thu-Fri
+  // Route 1 — Westside Medical AM, Sarah Mon-Wed, Priya Thu-Fri
   { id: 1, routeId: 1, courierId: 1, dayOfWeek: 1, rosterDate: null },
   { id: 2, routeId: 1, courierId: 1, dayOfWeek: 2, rosterDate: null },
   { id: 3, routeId: 1, courierId: 1, dayOfWeek: 3, rosterDate: null },
   { id: 4, routeId: 1, courierId: 3, dayOfWeek: 4, rosterDate: null },
   { id: 5, routeId: 1, courierId: 3, dayOfWeek: 5, rosterDate: null },
-  // Route 2 — CBD Pharma Priya all week
+  // Route 2 — Downtown Hospital Loop, Priya all week
   { id: 6, routeId: 2, courierId: 3, dayOfWeek: 1, rosterDate: null },
   { id: 7, routeId: 2, courierId: 3, dayOfWeek: 2, rosterDate: null },
   { id: 8, routeId: 2, courierId: 3, dayOfWeek: 3, rosterDate: null },
@@ -514,7 +520,7 @@ function RosterEditor({ route, roster, setRoster }) {
                     <div key={o.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 px-3 py-2 rounded-md">
                       <div>
                         <span className="text-sm font-medium text-amber-900">
-                          {d.toLocaleDateString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          {d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
                         </span>
                         <span className="text-sm text-amber-800 ml-3">→ {c?.name} ({c?.code})</span>
                       </div>
@@ -555,7 +561,7 @@ function RosterEditor({ route, roster, setRoster }) {
               }`}>
                 <div className="flex items-center gap-3">
                   <div className="w-20 text-slate-600">
-                    {p.date.toLocaleDateString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    {p.date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}
                   </div>
                   {i === 0 && <span className="text-xs px-1.5 py-0.5 bg-indigo-200 text-indigo-800 rounded">Today</span>}
                 </div>
