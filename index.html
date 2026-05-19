@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFRNT — Routes & Roster (Demo)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .chip { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:9999px; background:#eef2ff; color:#3730a3; font-size:11px; line-height:1.6; }
+  .chip button { color:#6366f1; font-weight:600; padding:0 2px; }
+  .chip button:hover { color:#312e81; }
+  .scrollbar-thin::-webkit-scrollbar { width:6px; height:6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+</style>
+</head>
+<body class="bg-slate-50">
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useMemo, useEffect } = React;
+
+// ── MOCK DATA ─────────────────────────────────────────────────────────
+const COURIERS = [
+  { id: 1, code: 'SBC01', name: 'Sarah Bennett',   vehicle: 'Car' },
+  { id: 2, code: 'MKL02', name: 'Mike Lawson',     vehicle: 'Van' },
+  { id: 3, code: 'PSH03', name: 'Priya Sharma',    vehicle: 'Car' },
+  { id: 4, code: 'TBR04', name: 'Tom Brennan',     vehicle: 'Van' },
+  { id: 5, code: 'ANE05', name: 'Anita Naidu',     vehicle: 'Car' },
+  { id: 6, code: 'JKP06', name: 'James Kapoor',    vehicle: 'Bike' },
+];
+
+const POSTCODES = [
+  { id: 1010, code: '1010', suburb: 'Auckland CBD',  region: 'Central' },
+  { id: 1011, code: '1011', suburb: 'Grafton',       region: 'Central' },
+  { id: 1021, code: '1021', suburb: 'Newmarket',     region: 'Central' },
+  { id: 1023, code: '1023', suburb: 'Mt Eden',       region: 'Central' },
+  { id: 1024, code: '1024', suburb: 'Epsom',         region: 'Central' },
+  { id: 1041, code: '1041', suburb: 'Newton',        region: 'Central' },
+  { id: 1050, code: '1050', suburb: 'Remuera',       region: 'East' },
+  { id: 1052, code: '1052', suburb: 'Greenlane',     region: 'East' },
+  { id: 1071, code: '1071', suburb: 'Mission Bay',   region: 'East' },
+  { id: 1072, code: '1072', suburb: 'Glen Innes',    region: 'East' },
+  { id: 0626, code: '0626', suburb: 'Glenfield',     region: 'North Shore' },
+  { id: 0627, code: '0627', suburb: 'Birkenhead',    region: 'North Shore' },
+  { id: 0630, code: '0630', suburb: 'Takapuna',      region: 'North Shore' },
+  { id: 0632, code: '0632', suburb: 'Rosedale',      region: 'North Shore' },
+  { id: 0931, code: '0931', suburb: 'Hobsonville',   region: 'West' },
+  { id: 0612, code: '0612', suburb: 'Albany',        region: 'North Shore' },
+  { id: 2010, code: '2010', suburb: 'Manukau',       region: 'South' },
+  { id: 2014, code: '2014', suburb: 'Otahuhu',       region: 'South' },
+  { id: 2016, code: '2016', suburb: 'Mangere',       region: 'South' },
+  { id: 2022, code: '2022', suburb: 'Papatoetoe',    region: 'South' },
+  { id: 2104, code: '2104', suburb: 'Onehunga',      region: 'South' },
+];
+
+// Seed routes
+const INITIAL_ROUTES = [
+  {
+    id: 1, name: 'Mt Eden / Epsom AM Medical',
+    area: 'Central',
+    defaultCourierId: 1,
+    zipcodeIds: [1023, 1024, 1021, 1041],
+    active: true,
+  },
+  {
+    id: 2, name: 'CBD Pharma Run',
+    area: 'Central',
+    defaultCourierId: 3,
+    zipcodeIds: [1010, 1011, 1041, 1021],
+    active: true,
+  },
+  {
+    id: 3, name: 'North Shore Hospital Loop',
+    area: 'North Shore',
+    defaultCourierId: 2,
+    zipcodeIds: [0630, 0627, 0626, 0632, 0612],
+    active: true,
+  },
+  {
+    id: 4, name: 'Manukau / South Medical PM',
+    area: 'South',
+    defaultCourierId: 4,
+    zipcodeIds: [2010, 2014, 2016, 2022, 2104],
+    active: true,
+  },
+  {
+    id: 5, name: 'East Auckland Specialist',
+    area: 'East',
+    defaultCourierId: 5,
+    zipcodeIds: [1050, 1052, 1071, 1072],
+    active: false,
+  },
+];
+
+// Seed roster: weekly pattern for routes 1-4
+const INITIAL_ROSTER = [
+  // Route 1 — Mt Eden, Sarah Mon-Wed, Priya Thu-Fri
+  { id: 1, routeId: 1, courierId: 1, dayOfWeek: 1, rosterDate: null },
+  { id: 2, routeId: 1, courierId: 1, dayOfWeek: 2, rosterDate: null },
+  { id: 3, routeId: 1, courierId: 1, dayOfWeek: 3, rosterDate: null },
+  { id: 4, routeId: 1, courierId: 3, dayOfWeek: 4, rosterDate: null },
+  { id: 5, routeId: 1, courierId: 3, dayOfWeek: 5, rosterDate: null },
+  // Route 2 — CBD Pharma Priya all week
+  { id: 6, routeId: 2, courierId: 3, dayOfWeek: 1, rosterDate: null },
+  { id: 7, routeId: 2, courierId: 3, dayOfWeek: 2, rosterDate: null },
+  { id: 8, routeId: 2, courierId: 3, dayOfWeek: 3, rosterDate: null },
+  { id: 9, routeId: 2, courierId: 3, dayOfWeek: 4, rosterDate: null },
+  { id: 10, routeId: 2, courierId: 3, dayOfWeek: 5, rosterDate: null },
+  // Route 2 — Sat override with Tom
+  { id: 11, routeId: 2, courierId: 4, dayOfWeek: null, rosterDate: '2026-05-23' },
+  // Route 3 — Mike full week
+  ...[1,2,3,4,5].map((dow, i) => ({ id: 100+i, routeId: 3, courierId: 2, dayOfWeek: dow, rosterDate: null })),
+  // Route 4 — Tom Mon-Fri
+  ...[1,2,3,4,5].map((dow, i) => ({ id: 200+i, routeId: 4, courierId: 4, dayOfWeek: dow, rosterDate: null })),
+];
+
+const DOW_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Helpers
+const courierById = (id, couriers = COURIERS) => couriers.find(c => c.id === id);
+const postcodeById = (id) => POSTCODES.find(p => p.id === id);
+
+function lookupRoster(roster, routeId, date) {
+  // Date override wins, then DOW, then null
+  const iso = date.toISOString().slice(0,10);
+  const dateMatch = roster.find(r => r.routeId === routeId && r.rosterDate === iso);
+  if (dateMatch) return { courierId: dateMatch.courierId, source: 'date-override' };
+  const dow = date.getDay();
+  const dowMatch = roster.find(r => r.routeId === routeId && r.rosterDate === null && r.dayOfWeek === dow);
+  if (dowMatch) return { courierId: dowMatch.courierId, source: 'pattern' };
+  return { courierId: null, source: 'none' };
+}
+
+// ── APP ───────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState('routes');
+  const [routes, setRoutes] = useState(INITIAL_ROUTES);
+  const [roster, setRoster] = useState(INITIAL_ROSTER);
+
+  return (
+    <div className="min-h-screen">
+      <Header tab={tab} setTab={setTab} />
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {tab === 'routes' && (
+          <RoutesPage routes={routes} setRoutes={setRoutes} roster={roster} />
+        )}
+        {tab === 'roster' && (
+          <RosterPage routes={routes} roster={roster} setRoster={setRoster} />
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function Header({ tab, setTab }) {
+  return (
+    <header className="bg-white border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">D</div>
+          <div>
+            <div className="text-base font-bold text-slate-900">DFRNT Configurator — Routes & Roster</div>
+            <div className="text-xs text-slate-500">Click-through demo · mocked data · not connected to a backend</div>
+          </div>
+        </div>
+        <nav className="flex gap-1">
+          {[
+            { id: 'routes', label: '🛣 Routes' },
+            { id: 'roster', label: '📅 Roster' },
+          ].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === t.id
+                  ? 'bg-indigo-50 text-indigo-700'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}>{t.label}</button>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="max-w-7xl mx-auto px-4 py-6 text-xs text-slate-400 text-center">
+      Demo for medical-client recurring routes. State is in-memory; refreshing the page resets it.
+      Final home: <code className="bg-slate-100 px-1.5 py-0.5 rounded">dfrntdrive-configurator</code> repo (tenant pages).
+    </footer>
+  );
+}
+
+// ── ROUTES PAGE ───────────────────────────────────────────────────────
+function RoutesPage({ routes, setRoutes, roster }) {
+  const [editingRoute, setEditingRoute] = useState(null);  // null | 'new' | route object
+
+  const handleSave = (route) => {
+    if (route.id) {
+      setRoutes(rs => rs.map(r => r.id === route.id ? route : r));
+    } else {
+      const newId = Math.max(...routes.map(r => r.id)) + 1;
+      setRoutes(rs => [...rs, { ...route, id: newId }]);
+    }
+    setEditingRoute(null);
+  };
+
+  const handleDelete = (id) => {
+    if (!confirm('Soft-delete this route? It will be hidden but not removed.')) return;
+    setRoutes(rs => rs.map(r => r.id === id ? { ...r, active: false } : r));
+  };
+
+  const rosterCountForRoute = (routeId) => roster.filter(r => r.routeId === routeId).length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Routes</h1>
+          <p className="text-sm text-slate-500 mt-1">Define named routes covering a cluster of postcodes. Each route is rostered to a courier per day.</p>
+        </div>
+        <button onClick={() => setEditingRoute('new')}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-md shadow-sm">
+          + Add Route
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              <th className="text-left px-4 py-2 font-medium">Name</th>
+              <th className="text-left px-4 py-2 font-medium">Area</th>
+              <th className="text-left px-4 py-2 font-medium">Default Courier</th>
+              <th className="text-left px-4 py-2 font-medium">Postcodes</th>
+              <th className="text-left px-4 py-2 font-medium">Roster Entries</th>
+              <th className="text-left px-4 py-2 font-medium">Status</th>
+              <th className="text-right px-4 py-2 font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {routes.map(r => {
+              const courier = courierById(r.defaultCourierId);
+              return (
+                <tr key={r.id} className="border-t border-slate-200 hover:bg-slate-50">
+                  <td className="px-4 py-3">
+                    <button onClick={() => setEditingRoute(r)} className="text-indigo-700 font-medium hover:underline">{r.name}</button>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{r.area}</td>
+                  <td className="px-4 py-3 text-slate-600">{courier ? `${courier.name} (${courier.code})` : '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-slate-700 font-medium">{r.zipcodeIds.length}</span>
+                    <span className="text-slate-400 ml-1">postcodes</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{rosterCountForRoute(r.id)}</td>
+                  <td className="px-4 py-3">
+                    {r.active
+                      ? <span className="inline-flex items-center gap-1 text-green-700 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-green-500"></span>Active</span>
+                      : <span className="inline-flex items-center gap-1 text-slate-400 text-xs font-medium"><span className="w-2 h-2 rounded-full bg-slate-300"></span>Inactive</span>
+                    }
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    <button onClick={() => setEditingRoute(r)} className="text-slate-500 hover:text-indigo-700 text-xs font-medium">Edit</button>
+                    <button onClick={() => handleDelete(r.id)} className="text-slate-500 hover:text-rose-600 text-xs font-medium">Delete</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {editingRoute && (
+        <RouteEditorModal
+          route={editingRoute === 'new' ? null : editingRoute}
+          onSave={handleSave}
+          onClose={() => setEditingRoute(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function RouteEditorModal({ route, onSave, onClose }) {
+  const [form, setForm] = useState(route || {
+    name: '', area: '', defaultCourierId: COURIERS[0].id, zipcodeIds: [], active: true,
+  });
+  const [postcodeSearch, setPostcodeSearch] = useState('');
+
+  const selectedPostcodes = form.zipcodeIds.map(postcodeById).filter(Boolean);
+  const availablePostcodes = POSTCODES.filter(p =>
+    !form.zipcodeIds.includes(p.id) &&
+    (postcodeSearch === '' ||
+     p.code.includes(postcodeSearch) ||
+     p.suburb.toLowerCase().includes(postcodeSearch.toLowerCase()) ||
+     p.region.toLowerCase().includes(postcodeSearch.toLowerCase()))
+  );
+
+  const addPostcode = (id) => {
+    setForm(f => ({ ...f, zipcodeIds: [...f.zipcodeIds, id] }));
+    setPostcodeSearch('');
+  };
+  const removePostcode = (id) => setForm(f => ({ ...f, zipcodeIds: f.zipcodeIds.filter(z => z !== id) }));
+
+  const valid = form.name.trim() && form.zipcodeIds.length > 0;
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">{route ? 'Edit Route' : 'New Route'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+        </div>
+
+        <div className="px-6 py-4 overflow-y-auto space-y-4 scrollbar-thin">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+            <input type="text" value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))}
+              placeholder="e.g. Mt Eden AM Medical"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Area</label>
+              <input type="text" value={form.area} onChange={e => setForm(f => ({...f, area: e.target.value}))}
+                placeholder="e.g. Central"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Default Courier</label>
+              <select value={form.defaultCourierId} onChange={e => setForm(f => ({...f, defaultCourierId: parseInt(e.target.value)}))}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {COURIERS.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Postcodes / Corridor <span className="text-slate-400 font-normal">({selectedPostcodes.length} selected)</span>
+            </label>
+            <div className="border border-slate-300 rounded-md p-2 min-h-[60px] flex flex-wrap gap-1.5">
+              {selectedPostcodes.map(p => (
+                <span key={p.id} className="chip">
+                  <span className="font-semibold">{p.code}</span>
+                  <span>{p.suburb}</span>
+                  <button onClick={() => removePostcode(p.id)} title="Remove">×</button>
+                </span>
+              ))}
+              {selectedPostcodes.length === 0 && (
+                <span className="text-xs text-slate-400 self-center px-2">No postcodes yet — search below to add</span>
+              )}
+            </div>
+            <div className="mt-2 relative">
+              <input type="text" value={postcodeSearch} onChange={e => setPostcodeSearch(e.target.value)}
+                placeholder="Search postcode / suburb / region..."
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              {postcodeSearch && (
+                <div className="absolute z-10 mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-48 overflow-y-auto w-full scrollbar-thin">
+                  {availablePostcodes.slice(0, 10).map(p => (
+                    <button key={p.id} onClick={() => addPostcode(p.id)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-slate-100 last:border-b-0">
+                      <span className="font-semibold">{p.code}</span>
+                      <span className="ml-2">{p.suburb}</span>
+                      <span className="ml-2 text-xs text-slate-400">{p.region}</span>
+                    </button>
+                  ))}
+                  {availablePostcodes.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-400">No matches</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({...f, active: e.target.checked}))}
+                className="w-4 h-4 text-indigo-600 rounded" />
+              Active (uncheck to soft-delete)
+            </label>
+          </div>
+        </div>
+
+        <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-md">Cancel</button>
+          <button onClick={() => onSave(form)} disabled={!valid}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-md">
+            {route ? 'Save Changes' : 'Create Route'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ROSTER PAGE ───────────────────────────────────────────────────────
+function RosterPage({ routes, roster, setRoster }) {
+  const activeRoutes = routes.filter(r => r.active);
+  const [selectedRouteId, setSelectedRouteId] = useState(activeRoutes[0]?.id);
+
+  useEffect(() => {
+    if (!activeRoutes.find(r => r.id === selectedRouteId) && activeRoutes.length) {
+      setSelectedRouteId(activeRoutes[0].id);
+    }
+  }, [routes]);
+
+  if (!activeRoutes.length) {
+    return <div className="text-center py-12 text-slate-500">No active routes. Create one on the Routes page first.</div>;
+  }
+
+  const route = activeRoutes.find(r => r.id === selectedRouteId);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Route Roster</h1>
+          <p className="text-sm text-slate-500 mt-1">Set the default weekly pattern, then override specific dates as needed. Date overrides always win over the weekly pattern.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-slate-600">Route:</label>
+          <select value={selectedRouteId} onChange={e => setSelectedRouteId(parseInt(e.target.value))}
+            className="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[280px]">
+            {activeRoutes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {route && <RosterEditor route={route} roster={roster} setRoster={setRoster} />}
+    </div>
+  );
+}
+
+function RosterEditor({ route, roster, setRoster }) {
+  const routeRoster = roster.filter(r => r.routeId === route.id);
+  const weeklyPattern = routeRoster.filter(r => r.rosterDate === null);
+  const dateOverrides = routeRoster.filter(r => r.rosterDate !== null).sort((a, b) => a.rosterDate.localeCompare(b.rosterDate));
+
+  // Build day-of-week → courierId map
+  const dowMap = {};
+  weeklyPattern.forEach(r => { dowMap[r.dayOfWeek] = r.courierId; });
+
+  const setDowCourier = (dow, courierId) => {
+    setRoster(rs => {
+      const filtered = rs.filter(r => !(r.routeId === route.id && r.rosterDate === null && r.dayOfWeek === dow));
+      if (courierId) {
+        const newId = Math.max(0, ...rs.map(r => r.id)) + 1;
+        return [...filtered, { id: newId, routeId: route.id, courierId, dayOfWeek: dow, rosterDate: null }];
+      }
+      return filtered;
+    });
+  };
+
+  const [newOverrideDate, setNewOverrideDate] = useState('');
+  const [newOverrideCourier, setNewOverrideCourier] = useState(COURIERS[0].id);
+  const addOverride = () => {
+    if (!newOverrideDate || !newOverrideCourier) return;
+    const newId = Math.max(0, ...roster.map(r => r.id)) + 1;
+    setRoster(rs => [...rs, { id: newId, routeId: route.id, courierId: newOverrideCourier, dayOfWeek: null, rosterDate: newOverrideDate }]);
+    setNewOverrideDate('');
+  };
+  const removeOverride = (id) => setRoster(rs => rs.filter(r => r.id !== id));
+
+  // 14-day preview
+  const today = new Date(); today.setHours(0,0,0,0);
+  const preview = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const lookup = lookupRoster(roster, route.id, d);
+    const courier = courierById(lookup.courierId) ?? courierById(route.defaultCourierId);
+    const sourceLabel = lookup.source === 'date-override' ? 'override'
+      : lookup.source === 'pattern' ? 'pattern'
+      : 'default';
+    return { date: d, dow: d.getDay(), courier, source: lookup.courierId ? sourceLabel : 'default' };
+  });
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Left column: pattern + overrides */}
+      <div className="space-y-4">
+        <Card title="Default Weekly Pattern"
+              subtitle="The courier rostered for this route on each day of week. Leave blank to fall back to the route's default courier.">
+          <div className="space-y-2">
+            {[1,2,3,4,5,6,0].map(dow => (
+              <div key={dow} className="flex items-center gap-3">
+                <div className="w-12 text-sm font-medium text-slate-600">{DOW_LABELS[dow]}</div>
+                <select value={dowMap[dow] || ''} onChange={e => setDowCourier(dow, e.target.value ? parseInt(e.target.value) : null)}
+                  className="flex-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="">— Use default courier ({courierById(route.defaultCourierId)?.code}) —</option>
+                  {COURIERS.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Date Overrides"
+              subtitle="Specific-date assignments. Wins over the weekly pattern when both exist for the same date.">
+          <div className="space-y-2 mb-3">
+            {dateOverrides.length === 0
+              ? <div className="text-xs text-slate-400 py-2">No date overrides yet.</div>
+              : dateOverrides.map(o => {
+                  const c = courierById(o.courierId);
+                  const d = new Date(o.rosterDate);
+                  return (
+                    <div key={o.id} className="flex items-center justify-between bg-amber-50 border border-amber-200 px-3 py-2 rounded-md">
+                      <div>
+                        <span className="text-sm font-medium text-amber-900">
+                          {d.toLocaleDateString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </span>
+                        <span className="text-sm text-amber-800 ml-3">→ {c?.name} ({c?.code})</span>
+                      </div>
+                      <button onClick={() => removeOverride(o.id)} className="text-amber-700 hover:text-rose-600 text-xs font-medium">Remove</button>
+                    </div>
+                  );
+                })}
+          </div>
+          <div className="flex items-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+              <input type="date" value={newOverrideDate} onChange={e => setNewOverrideDate(e.target.value)}
+                className="w-full px-2 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1">Courier</label>
+              <select value={newOverrideCourier} onChange={e => setNewOverrideCourier(parseInt(e.target.value))}
+                className="w-full px-2 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {COURIERS.map(c => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+              </select>
+            </div>
+            <button onClick={addOverride} disabled={!newOverrideDate}
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium px-3 py-1.5 rounded-md">
+              Add
+            </button>
+          </div>
+        </Card>
+      </div>
+
+      {/* Right column: preview */}
+      <div>
+        <Card title="14-Day Preview"
+              subtitle="Who's rostered for this route over the next 14 days. Date overrides → weekly pattern → default courier.">
+          <div className="space-y-1">
+            {preview.map((p, i) => (
+              <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-md text-sm ${
+                p.source === 'override' ? 'bg-amber-50' : i === 0 ? 'bg-indigo-50' : 'hover:bg-slate-50'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-20 text-slate-600">
+                    {p.date.toLocaleDateString('en-NZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  </div>
+                  {i === 0 && <span className="text-xs px-1.5 py-0.5 bg-indigo-200 text-indigo-800 rounded">Today</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-slate-800">
+                    {p.courier ? `${p.courier.name} (${p.courier.code})` : <span className="text-slate-400">Unassigned</span>}
+                  </div>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                    p.source === 'override' ? 'bg-amber-200 text-amber-800'
+                      : p.source === 'pattern' ? 'bg-slate-100 text-slate-600'
+                      : 'bg-slate-200 text-slate-500'
+                  }`}>{p.source}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-800">
+          <div className="font-semibold mb-1">How this is used downstream</div>
+          The same precedence logic (date override → DOW pattern → default courier) runs in <code>uspPrebookSet</code> each night.
+          The courier it picks is written to <code>tucJob.ucjbCourierID</code> for every materialised recurring job in this route.
+          RunViewer then displays each day's run with the rostered courier.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, subtitle, children }) {
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-slate-100">
+      <div className="px-4 py-3 border-b border-slate-100">
+        <div className="text-sm font-bold text-slate-900">{title}</div>
+        {subtitle && <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>}
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
